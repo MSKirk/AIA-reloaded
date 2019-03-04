@@ -56,7 +56,10 @@ def scale_rotate(image, angle=0, scale_factor=1, reference_pixel=None):
 
     return rotated_image
 
-
+# Promoting to the level 1.5 standard
+# 1) Plate scale, 2)rotation & 3)shift
+# 4) Rescale to integer
+# See http://jsoc.stanford.edu/doc/data/aia_test/SDOD0045_v10_AIA_plan_for_producing_and_distri_AIADataP_gPlanv1-6.pdf
 def aiaprep(fitsfile, cropsize=aia_image_size):    
     data, header = aia_fits_read(fitsfile)
     
@@ -100,5 +103,30 @@ def aia_fits_read(fitsfile):
     data = hdul[1].data.astype(np.float64)
     
     return data, header
+
+# fits write for aia images
+def aia_fits_write(fname, data, header, hdu_type=None):
+
+
+# update the header for level 1.5 corrections
+def aia_lev15_header_update(header):
+
+
+
+    return updated_header
+    
+# update the header for level 1.6 corrections
+def aia_lev16_header_update(header):
+
+    return updated_header
+    
+# Corrections to the level 1.6 standard
+# PSF and diffraction correction 
+# Effective Area correction
+# Rescale to integer; saved as 32bit Int
+
+def aia16prep(fitsfile, cropsize=aia_image_size):
+
+    return prepdata
 
 
