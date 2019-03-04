@@ -57,12 +57,9 @@ def scale_rotate(image, angle=0, scale_factor=1, reference_pixel=None):
     return rotated_image
 
 
-def aiaprep(fitsfile, cropsize=aia_image_size):
-
-    hdul = fits.open(fitsfile)
-    hdul[1].verify('silentfix')
-    header = hdul[1].header
-    data = hdul[1].data.astype(np.float64)
+def aiaprep(fitsfile, cropsize=aia_image_size):    
+    data, header = aia_fits_read(fitsfile)
+    
     data /= header['EXPTIME']
     # Target scale is 0.6 arcsec/px
     target_scale = 0.6
@@ -93,3 +90,15 @@ def aia_pad(image, pad_x, pad_y):
     pimage[:, pad_x+image.shape[1]:] = 0
     pimage[pad_y:image.shape[0]+pad_y, pad_x:image.shape[1]+pad_x] = image
     return pimage
+
+# modularize the fits reading function    
+def aia_fits_read(fitsfile):
+
+    hdul = fits.open(fitsfile)
+    hdul[1].verify('silentfix')
+    header = hdul[1].header
+    data = hdul[1].data.astype(np.float64)
+    
+    return data, header
+
+
