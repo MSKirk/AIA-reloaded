@@ -88,14 +88,10 @@ class AIAPrep:
         self.header['CRPIX1'] = self.data.shape[0]/2 + 0.5
         self.header['CRPIX2'] = self.data.shape[1]/2 + 0.5
 
-    def write_prepped(self, save_path=None, save_name=None):
-
-        if not save_path:
-            save_path = os.path.dirname(self.input_file)
+    def write_prepped(self, save_path=os.path.curdir, save_name=None):
 
         if not save_name:
-            save_name = os.path.basename(self.input_file)
-            save_name.replace('lev1', 'lev15')
+            save_name = os.path.basename(self.input_file).replace('lev1', 'lev15')
 
         hdu = fits.CompImageHDU(self.data, self.header)
         hdu.verify('silentfix')
