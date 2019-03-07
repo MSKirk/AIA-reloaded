@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
-from sunpy.io import fits
+from astropy.io import fits
+import os
 
 
 class AIAPrep:
@@ -13,11 +14,11 @@ class AIAPrep:
         # The aia image size is fixed by the size of the detector. For AIA raw data, this has no reason to change.
         self.aia_image_size = 4096
         self.cropsize = cropsize
-        self.data, self.header = aia_fits_read(filename)
+        self.input_file = filename
+        self.data, self.header = aia_fits_read(self.input_file)
 
         self.aiaprep()
         self.aia_lev15_header_update()
-
 
         if cropsize:
             self.crop_image()
@@ -66,11 +67,16 @@ class AIAPrep:
 
         # Data Values
         self.header['DATAMIN'] = self.data.min()
-
         self.header['DATAMAX'] = self.data.max()
         self.header['DATAMEDN'] = np.median(self.data)
         self.header['DATAMEAN'] = self.data.mean()
         self.header['DATARMS'] = np.std(self.data)
+
+        # Correcting NaN formats
+        for key, value in self.header.items():
+             if type(value) in [str]:
+                if 'nan' in value:
+                    self.header[key] = 'NaN'
 
     def crop_image(self):
         center = ((np.array(self.data.shape) - 1) / 2.0).astype(int)
@@ -82,6 +88,18 @@ class AIAPrep:
         self.header['CRPIX1'] = self.data.shape[0]/2 + 0.5
         self.header['CRPIX2'] = self.data.shape[1]/2 + 0.5
 
+    def write_prepped(self, save_path=None, save_name=None):
+
+        if not save_path:
+            save_path = os.path.dirname(self.input_file)
+
+        if not save_name:
+            save_name = os.path.basename(self.input_file)
+            save_name.replace('lev1', 'lev15')
+
+        hdu = fits.CompImageHDU(self.data, self.header)
+        hdu.verify('silentfix')
+        hdu.writeto(os.path.join(save_path,save_name))
 
     # FUTURE --->> update the header for level 1.6 corrections
     #def aia_lev16_header_update(self):
