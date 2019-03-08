@@ -7,15 +7,15 @@ import os
 class AIAPrep:
     # Promoting to the level 1.5 standard
     # 1) Plate scale, 2)rotation & 3)shift
-    # 4) Rescale to integer
+    # 4) Set floor to zero, Rescale to 32 bit float
     # See http://jsoc.stanford.edu/doc/data/aia_test/SDOD0045_v10_AIA_plan_for_producing_and_distri_AIADataP_gPlanv1-6.pdf
 
-    def __init__(self, filename, level=1.5, cropsize=None):
+    def __init__(self, filename, level=1.5, cropsize=None, rice=True):
         # The aia image size is fixed by the size of the detector. For AIA raw data, this has no reason to change.
         self.aia_image_size = 4096
         self.cropsize = cropsize
         self.input_file = filename
-        self.data, self.header = aia_fits_read(self.input_file)
+        self.data, self.header = aia_fits_read(self.input_file, rice=rice)
 
         self.aiaprep()
         self.aia_lev15_header_update()
@@ -37,7 +37,7 @@ class AIAPrep:
                                 reference_pixel=reference_pixel)
         prepdata[prepdata < 0] = 0
 
-        self.data = np.int32(prepdata)
+        self.data = np.float32(prepdata)
 
     def aia_lev15_header_update(self):
         # update the header for level 1.5 corrections
@@ -57,7 +57,7 @@ class AIAPrep:
         self.header['lvl_num'] = 1.5
 
         #bits per pixel
-        self.header['bitpix'] = -64
+        self.header['bitpix'] = -32
 
         #Define rotation matrix
         self.header['pc2_1'] = 0.0
@@ -72,11 +72,10 @@ class AIAPrep:
         self.header['DATAMEAN'] = self.data.mean()
         self.header['DATARMS'] = np.std(self.data)
 
-        # Correcting NaN formats
-        for key, value in self.header.items():
-             if type(value) in [str]:
-                if 'nan' in value:
-                    self.header[key] = 'NaN'
+        # SDO documentation say these keys meant to be discarded:
+        # http://jsoc.stanford.edu/~jsoc/keywords/AIA/AIA02840_K_AIA-SDO_FITS_Keyword_Document.pdf
+        self.header.remove('OSCNMEAN')
+        self.header.remove('OSCNRMS')
 
     def crop_image(self):
         center = ((np.array(self.data.shape) - 1) / 2.0).astype(int)
@@ -95,7 +94,7 @@ class AIAPrep:
 
         hdu = fits.CompImageHDU(self.data, self.header)
         hdu.verify('silentfix')
-        hdu.writeto(os.path.join(save_path,save_name))
+        hdu.writeto(os.path.join(save_path,save_name), overwrite=True)
 
     # FUTURE --->> update the header for level 1.6 corrections
     #def aia_lev16_header_update(self):
@@ -106,6 +105,7 @@ class AIAPrep:
     # Rescale to integer; saved as 32bit Int
 
     #def aia16prep(self):
+
 
 def scale_rotate(image, angle=0, scale_factor=1, reference_pixel=None):
     """
@@ -158,6 +158,7 @@ def scale_rotate(image, angle=0, scale_factor=1, reference_pixel=None):
 
     return rotated_image
 
+
 # Alternate padding method. On AIA, it is ~6x faster than numpy.pad used in Sunpy's aiaprep
 def aia_pad(image, pad_x, pad_y):
     newsize = [image.shape[0]+2*pad_y, image.shape[1]+2*pad_x]
@@ -169,21 +170,20 @@ def aia_pad(image, pad_x, pad_y):
     pimage[pad_y:image.shape[0]+pad_y, pad_x:image.shape[1]+pad_x] = image
     return pimage
 
+
 # modularize the fits reading function    
-def aia_fits_read(fitsfile):
+def aia_fits_read(fitsfile, rice=True):
 
     hdul = fits.open(fitsfile)
-    for ii in range(len(hdul)):
-        if isinstance(hdul[ii].data,  np.ndarray):
-            hdul[ii].verify('silentfix')
-            header = hdul[ii].header
-            data = hdul[ii].data.astype(np.float64)
+    if rice:
+        hdu = hdul[1]
+    else:
+        hdu = hdul[0]
+    hdu.verify('silentfix')
+    header = hdu.header
+    data = hdu.data.astype(np.float64)
 
-            return data, header
-
-
-
-
+    return data, header
     
 
 
