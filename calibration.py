@@ -24,7 +24,12 @@ class AIAPrep:
             self.crop_image()
 
     def aiaprep(self):
-        self.data /= self.header['EXPTIME']
+        # Divide by exposure time, avoid NaNs
+        if self.header['EXPTIME'] <= 0:
+            self.data /= np.inf
+        else:
+            self.data /= self.header['EXPTIME']
+
         # Target scale is 0.6 arcsec/px
         target_scale = 0.6
         scale_factor = self.header['CDELT1'] / target_scale
@@ -33,8 +38,11 @@ class AIAPrep:
         # Rotation angle with openCV uses coordinate origin at top-left corner. For solar images in numpy we need to invert the angle.
         angle = -self.header['CROTA2']
         # Run scaled rotation. The output will be a rotated, rescaled, padded array.
-        prepdata = scale_rotate(self.data, angle=angle, scale_factor=scale_factor,
-                                reference_pixel=reference_pixel)
+        if all(ii > 0 for ii in reference_pixel+[scale_factor]):
+            prepdata = scale_rotate(self.data, angle=angle, scale_factor=scale_factor, reference_pixel=reference_pixel)
+        else:
+            prepdata = self.data
+
         prepdata[prepdata < 0] = 0
 
         self.data = np.float32(prepdata)
@@ -66,11 +74,11 @@ class AIAPrep:
         self.header['pc1_1'] = 1.0
 
         # Data Values
-        self.header['DATAMIN'] = self.data.min()
-        self.header['DATAMAX'] = self.data.max()
-        self.header['DATAMEDN'] = np.median(self.data)
-        self.header['DATAMEAN'] = self.data.mean()
-        self.header['DATARMS'] = np.std(self.data)
+        self.header['DATAMIN'] = np.nanmin(self.data)
+        self.header['DATAMAX'] = np.nanmax(self.data)
+        self.header['DATAMEDN'] = np.nanmedian(self.data)
+        self.header['DATAMEAN'] = np.nanmean(self.data)
+        self.header['DATARMS'] = np.nanstd(self.data)
 
         # SDO documentation say these keys meant to be discarded:
         # http://jsoc.stanford.edu/~jsoc/keywords/AIA/AIA02840_K_AIA-SDO_FITS_Keyword_Document.pdf
