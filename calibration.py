@@ -213,7 +213,7 @@ def nan_blaster(fitsheader, delete=True):
                 badkeys += [key]
                 
         if type(value) == str:
-            if value.strip().lower() == 'nan':
+            if value.strip().lower().find('nan') in [0,1]:
                 badkeys += [key]
 
     for key in badkeys:
