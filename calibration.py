@@ -20,6 +20,7 @@ class AIAPrep:
         self.aiaprep()
         self.aia_lev15_header_update()
 
+
         if cropsize:
             self.crop_image()
 
@@ -99,12 +100,13 @@ class AIAPrep:
 
         if not save_name:
             save_name = os.path.basename(self.input_file).replace('lev1', 'lev15')
+		
+        self.header = nan_blaster(self.header)
 
-        saveheader = nan_blaster(self.header)
-
-        hdu = fits.CompImageHDU(self.data, saveheader)        
+        hdu = fits.CompImageHDU(self.data, self.header)        
         hdu.verify('silentfix')
         hdu.writeto(os.path.join(save_path,save_name), overwrite=True)
+        hdu.close()
             
     # FUTURE --->> update the header for level 1.6 corrections
     #def aia_lev16_header_update(self):
@@ -213,7 +215,7 @@ def nan_blaster(fitsheader, delete=True):
                 badkeys += [key]
                 
         if type(value) == str:
-            if value.strip().lower().find('nan') in [0,1]:
+            if any(nantype in value.strip().lower() for nantype in ['nan', '-nan']):
                 badkeys += [key]
 
     for key in badkeys:
