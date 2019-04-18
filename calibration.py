@@ -106,7 +106,6 @@ class AIAPrep:
         hdu = fits.CompImageHDU(self.data, self.header)        
         hdu.verify('silentfix')
         hdu.writeto(os.path.join(save_path,save_name), overwrite=True)
-        hdu.close()
             
     # FUTURE --->> update the header for level 1.6 corrections
     #def aia_lev16_header_update(self):
