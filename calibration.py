@@ -100,12 +100,12 @@ class AIAPrep:
         if not save_name:
             save_name = os.path.basename(self.input_file).replace('lev1', 'lev15')
 
-		self.header = nan_blaster(self.header)
+        saveheader = nan_blaster(self.header)
 
-        hdu = fits.CompImageHDU(self.data, self.header)        
+        hdu = fits.CompImageHDU(self.data, saveheader)        
         hdu.verify('silentfix')
         hdu.writeto(os.path.join(save_path,save_name), overwrite=True)
-			
+            
     # FUTURE --->> update the header for level 1.6 corrections
     #def aia_lev16_header_update(self):
 
@@ -199,29 +199,28 @@ def aia_fits_read(fitsfile, rice=True):
 def nan_blaster(fitsheader, delete=True):
 
         # Remove newlines from comment and history
-	if 'comment' in fitsheader:
-		fitsheader['comment'] = fitsheader['comment'].replace("\n", "")
-	if 'history' in fitsheader:
-		fitsheader['history'] = fitsheader['history'].replace("\n", "")
+    if 'comment' in fitsheader:
+        fitsheader['comment'] = fitsheader['comment'].replace("\n", "")
+    if 'history' in fitsheader:
+        fitsheader['history'] = fitsheader['history'].replace("\n", "")
 
-	badkeys = []
+    badkeys = []
 
-	# finds header keywords that are NaN
-	for key, value in fitsheader.items():
-		if type(value) in (int, float):
-			if np.isnan(value):
-				badkeys += [key]
-				
-		if type(value) == str:
-			if value.strip().lower() == 'nan':
-				badkeys += [key]
+    # finds header keywords that are NaN
+    for key, value in fitsheader.items():
+        if type(value) in (int, float):
+            if np.isnan(value):
+                badkeys += [key]
+                
+        if type(value) == str:
+            if value.strip().lower() == 'nan':
+                badkeys += [key]
 
-	for key in badkeys:
-		if delete:		
-			fitsheader.pop(key, None)
-		else:
-			fitsheader.set(key, 0)
-
+    for key in badkeys:
+        if delete:        
+            fitsheader.pop(key, None)
+        else:
+            fitsheader.set(key, 0)
     return fitsheader
 
 
