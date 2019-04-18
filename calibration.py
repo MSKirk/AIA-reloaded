@@ -218,7 +218,7 @@ def nan_blaster(fitsheader, delete=True):
 
     for key in badkeys:
         if delete:        
-            fitsheader.pop(key, None)
+            fitsheader.remove(key)
         else:
             fitsheader.set(key, 0)
     return fitsheader
